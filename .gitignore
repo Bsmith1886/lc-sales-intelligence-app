@@ -30,6 +30,11 @@ dist/
 .env.local
 local.settings.json
 
+# Certificates (thumbprint documented in DECISIONS.md; private key stays in Windows cert store)
+*.cer
+*.pfx
+*.pem
+
 # Claude Code
 .claude/settings.local.json
 .claude/worktree-locks/
