@@ -19,7 +19,7 @@ Update this file whenever a meaningful decision is made or a setup step is compl
 | NetSuite Integration Record created (sandbox) | ✅ Done | See NetSuite Setup below |
 | NetSuite Role created (sandbox) | ✅ Done | See NetSuite Setup below |
 | NetSuite M2M certificate mapped (sandbox) | ✅ Done | See NetSuite Setup below |
-| Add secrets to .NET User Secrets | ⏳ Pending | Next session — need to collect all values first |
+| Add secrets to .NET User Secrets | ✅ Done | All 8 keys set in LC.Host.Api (sandbox values). UserSecretsId: 438c7130-870a-4d95-9bd4-aca146573433 |
 | Pipeline variable groups | ⏳ Deferred | Create before first Azure deployment |
 | NetSuite Production setup | ⏳ Deferred | Repeat sandbox steps in prod when ready to deploy |
 
