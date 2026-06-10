@@ -1,0 +1,292 @@
+# Shared build-and-deploy pipeline for all LED Connection Angular/.NET AI Tools.
+#
+# Reference from each tool repo's azure-pipelines.yml:
+#
+#   trigger:
+#     branches:
+#       include:
+#         - main
+#         - AD-*
+#
+#   resources:
+#     repositories:
+#       - repository: standards
+#         type: git
+#         name: AI Tools/lc-tool-standards
+#
+#   stages:
+#     - template: pipeline-templates/build-and-deploy.yml@standards
+#       parameters:
+#         toolName: your-tool-name
+#         azureServiceConnection: lc-azure-service-connection
+#
+# Prerequisites — complete before first pipeline run:
+#   1. Install Replace Tokens extension in your Azure DevOps org:
+#      marketplace.visualstudio.com/items?itemName=qetza.replacetokens
+#   2. Create variable groups in AI Tools project:
+#      {toolName}-dev, {toolName}-staging, {toolName}-prod
+#      Populate all #{...}# tokens found in appsettings.json.
+#   3. Create Azure App Service (API) per environment:
+#      {toolName}-api-dev, {toolName}-api-staging, {toolName}-api-prod
+#   4. Create Azure App Service (Proxy) per environment:
+#      {toolName}-proxy-dev, {toolName}-proxy-staging, {toolName}-proxy-prod
+#   5. Create or confirm Azure service connection named per azureServiceConnection param.
+#   6. Add approval gate on prod environment:
+#      Project Settings → Environments → {toolName}-prod → Approvals and Checks → Approvals
+
+parameters:
+  - name: toolName
+    type: string
+    displayName: Tool name (lowercase-hyphenated, e.g. proposal-generator)
+
+  - name: azureServiceConnection
+    type: string
+    displayName: Azure DevOps service connection name
+    default: lc-azure-service-connection
+
+  - name: angularAppName
+    type: string
+    displayName: Angular app name in lc-workspace (leave empty to default to app-{toolName})
+    default: ''
+
+  - name: apiProjectPath
+    type: string
+    default: LC/Host/LC.Host.Api/LC.Host.Api.csproj
+
+  - name: proxyProjectPath
+    type: string
+    default: LC/Host/LC.Host.Proxy/LC.Host.Proxy.csproj
+
+  - name: dotnetVersion
+    type: string
+    default: '10.x'
+
+  - name: nodeVersion
+    type: string
+    default: '22.x'
+
+stages:
+  - stage: Build
+    displayName: Build & Test
+    jobs:
+      - job: BuildAndTest
+        displayName: Build and test
+        pool:
+          vmImage: ubuntu-latest
+        variables:
+          buildConfig: Release
+          angularApp: ${{ coalesce(parameters.angularAppName, format('app-{0}', parameters.toolName)) }}
+        steps:
+          - task: UseDotNet@2
+            displayName: Install .NET SDK
+            inputs:
+              version: ${{ parameters.dotnetVersion }}
+              performMultiLevelLookup: true
+
+          - task: NodeTool@0
+            displayName: Install Node.js
+            inputs:
+              versionSpec: ${{ parameters.nodeVersion }}
+
+          - script: dotnet restore
+            displayName: Restore .NET packages
+
+          - script: dotnet build --configuration $(buildConfig) --no-restore
+            displayName: Build .NET solution
+
+          - script: dotnet test --configuration $(buildConfig) --no-build --logger trx --results-directory $(Agent.TempDirectory)/test-results
+            displayName: Run tests
+
+          - task: PublishTestResults@2
+            displayName: Publish test results
+            condition: always()
+            inputs:
+              testResultsFormat: VSTest
+              testResultsFiles: $(Agent.TempDirectory)/test-results/**/*.trx
+              failTaskOnFailedTests: true
+
+          - script: npm ci
+            displayName: Install npm packages
+            workingDirectory: lc-workspace
+
+          - script: npx ng build $(angularApp) --configuration production
+            displayName: Build Angular app
+            workingDirectory: lc-workspace
+
+          - task: DotNetCoreCLI@2
+            displayName: Publish API
+            inputs:
+              command: publish
+              publishWebProjects: false
+              projects: ${{ parameters.apiProjectPath }}
+              arguments: --configuration $(buildConfig) --no-build --output $(Build.ArtifactStagingDirectory)/api
+              zipAfterPublish: true
+              modifyOutputPath: false
+
+          - task: DotNetCoreCLI@2
+            displayName: Publish Proxy
+            inputs:
+              command: publish
+              publishWebProjects: false
+              projects: ${{ parameters.proxyProjectPath }}
+              arguments: --configuration $(buildConfig) --no-build --output $(Build.ArtifactStagingDirectory)/proxy
+              zipAfterPublish: true
+              modifyOutputPath: false
+
+          - publish: $(Build.ArtifactStagingDirectory)/api
+            artifact: api
+            displayName: Upload API artifact
+
+          - publish: $(Build.ArtifactStagingDirectory)/proxy
+            artifact: proxy
+            displayName: Upload Proxy artifact
+
+          - publish: lc-workspace/dist/$(angularApp)
+            artifact: frontend
+            displayName: Upload frontend artifact
+
+  - stage: DeployDev
+    displayName: Deploy → Dev
+    dependsOn: Build
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    variables:
+      - group: ${{ parameters.toolName }}-dev
+    jobs:
+      - deployment: DeployDev
+        displayName: Deploy to Dev
+        environment: ${{ parameters.toolName }}-dev
+        pool:
+          vmImage: ubuntu-latest
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: replacetokens@5
+                  displayName: Replace tokens — API config
+                  inputs:
+                    targetFiles: $(Pipeline.Workspace)/api/**/*.json
+                    tokenPrefix: '#{'
+                    tokenSuffix: '}#'
+
+                - task: AzureRmWebAppDeployment@4
+                  displayName: Deploy API
+                  inputs:
+                    ConnectionType: AzureRM
+                    azureSubscription: ${{ parameters.azureServiceConnection }}
+                    appType: webApp
+                    WebAppName: ${{ parameters.toolName }}-api-dev
+                    packageForLinux: $(Pipeline.Workspace)/api/*.zip
+
+                - task: replacetokens@5
+                  displayName: Replace tokens — Proxy config
+                  inputs:
+                    targetFiles: $(Pipeline.Workspace)/proxy/**/*.json
+                    tokenPrefix: '#{'
+                    tokenSuffix: '}#'
+
+                - task: AzureRmWebAppDeployment@4
+                  displayName: Deploy Proxy
+                  inputs:
+                    ConnectionType: AzureRM
+                    azureSubscription: ${{ parameters.azureServiceConnection }}
+                    appType: webApp
+                    WebAppName: ${{ parameters.toolName }}-proxy-dev
+                    packageForLinux: $(Pipeline.Workspace)/proxy/*.zip
+
+  - stage: DeployStaging
+    displayName: Deploy → Staging
+    dependsOn: DeployDev
+    condition: succeeded()
+    variables:
+      - group: ${{ parameters.toolName }}-staging
+    jobs:
+      - deployment: DeployStaging
+        displayName: Deploy to Staging
+        environment: ${{ parameters.toolName }}-staging
+        pool:
+          vmImage: ubuntu-latest
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: replacetokens@5
+                  displayName: Replace tokens — API config
+                  inputs:
+                    targetFiles: $(Pipeline.Workspace)/api/**/*.json
+                    tokenPrefix: '#{'
+                    tokenSuffix: '}#'
+
+                - task: AzureRmWebAppDeployment@4
+                  displayName: Deploy API
+                  inputs:
+                    ConnectionType: AzureRM
+                    azureSubscription: ${{ parameters.azureServiceConnection }}
+                    appType: webApp
+                    WebAppName: ${{ parameters.toolName }}-api-staging
+                    packageForLinux: $(Pipeline.Workspace)/api/*.zip
+
+                - task: replacetokens@5
+                  displayName: Replace tokens — Proxy config
+                  inputs:
+                    targetFiles: $(Pipeline.Workspace)/proxy/**/*.json
+                    tokenPrefix: '#{'
+                    tokenSuffix: '}#'
+
+                - task: AzureRmWebAppDeployment@4
+                  displayName: Deploy Proxy
+                  inputs:
+                    ConnectionType: AzureRM
+                    azureSubscription: ${{ parameters.azureServiceConnection }}
+                    appType: webApp
+                    WebAppName: ${{ parameters.toolName }}-proxy-staging
+                    packageForLinux: $(Pipeline.Workspace)/proxy/*.zip
+
+  - stage: DeployProd
+    displayName: Deploy → Production
+    dependsOn: DeployStaging
+    condition: succeeded()
+    variables:
+      - group: ${{ parameters.toolName }}-prod
+    jobs:
+      - deployment: DeployProd
+        displayName: Deploy to Production
+        # Approval gate blocks this stage until a designated approver signs off.
+        # Configure: Project Settings → Environments → {toolName}-prod → Approvals and Checks → Approvals
+        environment: ${{ parameters.toolName }}-prod
+        pool:
+          vmImage: ubuntu-latest
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: replacetokens@5
+                  displayName: Replace tokens — API config
+                  inputs:
+                    targetFiles: $(Pipeline.Workspace)/api/**/*.json
+                    tokenPrefix: '#{'
+                    tokenSuffix: '}#'
+
+                - task: AzureRmWebAppDeployment@4
+                  displayName: Deploy API
+                  inputs:
+                    ConnectionType: AzureRM
+                    azureSubscription: ${{ parameters.azureServiceConnection }}
+                    appType: webApp
+                    WebAppName: ${{ parameters.toolName }}-api-prod
+                    packageForLinux: $(Pipeline.Workspace)/api/*.zip
+
+                - task: replacetokens@5
+                  displayName: Replace tokens — Proxy config
+                  inputs:
+                    targetFiles: $(Pipeline.Workspace)/proxy/**/*.json
+                    tokenPrefix: '#{'
+                    tokenSuffix: '}#'
+
+                - task: AzureRmWebAppDeployment@4
+                  displayName: Deploy Proxy
+                  inputs:
+                    ConnectionType: AzureRM
+                    azureSubscription: ${{ parameters.azureServiceConnection }}
+                    appType: webApp
+                    WebAppName: ${{ parameters.toolName }}-proxy-prod
+                    packageForLinux: $(Pipeline.Workspace)/proxy/*.zip

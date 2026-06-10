@@ -1,0 +1,46 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# .NET build output
+bin/
+obj/
+publish/
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+
+# .NET user secrets — use Azure Key Vault in prod, User Secrets in dev
+**/secrets.json
+
+# Angular
+node_modules/
+dist/
+.angular/
+*.js.map
+
+# Environment / secrets
+.secrets/
+*.env
+.env.local
+local.settings.json
+
+# Claude Code
+.claude/settings.local.json
+.claude/worktree-locks/
+.claude/worktrees/
+.remember/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+**/.DS_Store
+Thumbs.db
