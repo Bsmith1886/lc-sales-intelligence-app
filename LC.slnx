@@ -1,5 +1,8 @@
 <Solution>
   <Folder Name="/LC/" />
+  <Folder Name="/LC/Access/">
+    <Project Path="LC/Access/LC.Access.Notion/LC.Access.Notion.csproj" />
+  </Folder>
   <Folder Name="/LC/Host/">
     <Project Path="LC/Host/LC.Host.Api/LC.Host.Api.csproj" />
     <Project Path="LC/Host/LC.Host.Common/LC.Host.Common.csproj" />

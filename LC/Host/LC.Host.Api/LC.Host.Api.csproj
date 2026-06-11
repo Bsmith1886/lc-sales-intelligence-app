@@ -14,6 +14,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\LC.Host.Common\LC.Host.Common.csproj" />
+    <ProjectReference Include="..\..\Access\LC.Access.Notion\LC.Access.Notion.csproj" />
   </ItemGroup>
 
 </Project>
