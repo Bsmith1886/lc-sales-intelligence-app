@@ -164,13 +164,39 @@ git push github main
 
 ---
 
+## Notion Database Schema Decisions (2026-06-11)
+
+### Synced By — `created_by` system property (not a text field)
+**Decision:** `Synced By` uses Notion's native `created_by` property type, not a plain text field.  
+**Why:** Each rep connects their own Notion account to Claude via OAuth. When Claude creates a page via the rep's connector, Notion automatically attributes the page to that user. No prompt input, no risk of wrong or missing values.  
+**Important:** This is distinct from `Rep Name` (the assigned sales rep from NetSuite). A manager or admin could sync on behalf of a rep — `Synced By` captures who ran the sync, not who owns the deal.
+
+### Audience — inferred at sync time by Claude
+**Decision:** `Audience` (Internal/External) is a Select field populated by Claude at sync time by reading the recording title and transcript.  
+**Why:** Manual tagging by reps is unreliable. Claude can infer from context — "Weekly Meeting" in the title, all-internal speakers, internal project topics → Internal. A customer name, prospect company, or external party present → External.  
+**Rule:** When uncertain, Claude leaves the field blank. A wrong value is worse than an empty one.
+
+### Transcript-only sync — no AI summary, no audio
+**Decision:** The sync prompt instructs Claude to fetch only the transcript (`get_transcript`). It must not call `get_note` (AI summary) or retrieve the audio/presigned URL.  
+**Why:** Summaries are generated on-demand by the coaching workflow (Phase 5). Pulling them at sync time wastes tokens, adds noise, and may produce stale summaries before enrichment runs.
+
+### Skip recordings with no transcript — no empty records
+**Decision:** If `get_transcript` returns nothing, Claude skips the recording entirely. No Notion record is created.  
+**Why:** Empty records pollute the database, break filters, and confuse enrichment. A recording has no value in this system until it has a transcript. Reps must manually trigger Plaud transcription for sub-200-word recordings before running the sync.
+
+### Duplicate detection by Recording ID
+**Decision:** Claude checks for an existing Notion entry matching the Plaud `Recording ID` field before creating a new record. Name-based matching is not used.  
+**Why:** Recording names can be renamed in Plaud after the first sync. File ID is stable and unique — name-based dedup creates false duplicates or misses real ones.
+
+---
+
 ## What's Next (Phase 2 — App Foundation)
 
-Before starting code, complete these in the next session:
-1. Collect all credential values (NetSuite Client ID/Secret, Account ID; Notion token + DB ID; Entra Tenant ID + Client ID)
-2. Run `dotnet user-secrets set` for each value in `LC.Host.Api` project
-3. Scaffold the Aspire solution (copy Host projects from Audit App)
-4. Build `LC.Access.Notion` — `NotionTranscriptAccessor`
-5. Wire up MSAL Angular in the frontend
+Credentials are set in User Secrets. Next steps:
+
+1. Scaffold the Aspire solution (copy Host projects from Audit App): `LC.Host.Orchestrator`, `LC.Host.Api`, `LC.Host.Proxy`, `LC.Host.Common`
+2. Build `LC.Access.Notion` — `INotionTranscriptAccessor` / `NotionTranscriptAccessor`
+3. Wire up MSAL Angular in the frontend
+4. Build `transcript-list` and `transcript-detail` components
 
 See the full build plan in Notion: Build Plan — Sales Intelligence Pipeline (page ID: 37afea4a-4b32-8173-94e2-e00f60f77a31)

@@ -1,6 +1,27 @@
 {
   "permissions": {
-    "allow": []
+    "allow": [
+      "Bash(gh pr *)",
+      "Bash(gh issue *)",
+      "Read(//c/Users/billiejos/.claude/projects/c--Users-billiejos-Projects-LED-AI-Tools-lc-sales-intelligence-app/memory/**)",
+      "Bash(New-Item -ItemType Directory -Path \"LC\\\\Host\\\\LC.Host.Api\" -Force)",
+      "Bash(Out-Null)",
+      "PowerShell(New-Item -ItemType Directory -Path \"c:\\\\Users\\\\billiejos\\\\Projects\\\\LED AI Tools\\\\lc-sales-intelligence-app\\\\LC\\\\Host\\\\LC.Host.Api\" -Force)",
+      "PowerShell(dotnet user-secrets init --project \"c:\\\\Users\\\\billiejos\\\\Projects\\\\LED AI Tools\\\\lc-sales-intelligence-app\\\\LC\\\\Host\\\\LC.Host.Api\\\\LC.Host.Api.csproj\")",
+      "PowerShell(dotnet user-secrets set \"NetSuiteConfiguration:CertificateThumbprint\" \"243090B361AD78CDBD473744595D2A4E382AF56E\" --project \"c:\\\\Users\\\\billiejos\\\\Projects\\\\LED AI Tools\\\\lc-sales-intelligence-app\\\\LC\\\\Host\\\\LC.Host.Api\\\\LC.Host.Api.csproj\")",
+      "mcp__claude_ai_Notion__notion-update-page",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Read(//c/Users/billiejos/.claude/**)",
+      "Read(//c/Users/billiejos/Projects/LED AI Tools/**)",
+      "mcp__claude_ai_Notion__notion-update-data-source"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\billiejos\\.claude",
+      "c:\\Users\\billiejos\\Projects\\LED AI Tools"
+    ]
   },
   "hooks": {
     "PreToolUse": [
