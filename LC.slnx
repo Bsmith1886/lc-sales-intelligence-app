@@ -9,4 +9,7 @@
     <Project Path="LC/Host/LC.Host.Orchestrator/LC.Host.Orchestrator.csproj" />
     <Project Path="LC/Host/LC.Host.Proxy/LC.Host.Proxy.csproj" />
   </Folder>
+  <Folder Name="/LC/Manager/">
+    <Project Path="LC/Manager/LC.Manager.Transcript/LC.Manager.Transcript.csproj" />
+  </Folder>
 </Solution>
