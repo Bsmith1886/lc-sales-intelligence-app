@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/LC/" />
+  <Folder Name="/LC/Host/">
+    <Project Path="LC/Host/LC.Host.Api/LC.Host.Api.csproj" />
+    <Project Path="LC/Host/LC.Host.Common/LC.Host.Common.csproj" />
+    <Project Path="LC/Host/LC.Host.Orchestrator/LC.Host.Orchestrator.csproj" />
+    <Project Path="LC/Host/LC.Host.Proxy/LC.Host.Proxy.csproj" />
+  </Folder>
+</Solution>
