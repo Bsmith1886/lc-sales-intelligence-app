@@ -9,6 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
 builder.Services.AddMicrosoftIdentityWebApiAuthentication(builder.Configuration);
 builder.Services.Configure<NotionConfiguration>(builder.Configuration.GetSection("NotionConfiguration"));
 LC.Access.Notion.ServiceInjection.ConfigureServices(builder.Services);

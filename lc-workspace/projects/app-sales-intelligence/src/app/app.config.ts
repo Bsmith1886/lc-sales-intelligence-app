@@ -1,4 +1,4 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
+import { APP_INITIALIZER, ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import {
@@ -15,6 +15,7 @@ import {
   InteractionType,
   PublicClientApplication,
 } from '@azure/msal-browser';
+import { firstValueFrom } from 'rxjs';
 import { routes } from './app.routes';
 import { environment } from '../environments/environment';
 
@@ -39,8 +40,22 @@ function msalGuardConfigFactory() {
 function msalInterceptorConfigFactory() {
   return {
     interactionType: InteractionType.Redirect,
-    protectedResourceMap: new Map([['/api/', [environment.apiScope]]]),
+    protectedResourceMap: new Map([[`${window.location.origin}/api/*`, [environment.apiScope]]]),
   };
+}
+
+function msalInitializerFactory(msalService: MsalService) {
+  return () =>
+    firstValueFrom(msalService.handleRedirectObservable()).then((result) => {
+      if (result?.account) {
+        msalService.instance.setActiveAccount(result.account);
+      } else {
+        const accounts = msalService.instance.getAllAccounts();
+        if (accounts.length > 0) {
+          msalService.instance.setActiveAccount(accounts[0]);
+        }
+      }
+    });
 }
 
 export const appConfig: ApplicationConfig = {
@@ -55,5 +70,11 @@ export const appConfig: ApplicationConfig = {
     MsalService,
     MsalGuard,
     MsalBroadcastService,
+    {
+      provide: APP_INITIALIZER,
+      useFactory: msalInitializerFactory,
+      deps: [MsalService],
+      multi: true,
+    },
   ],
 };

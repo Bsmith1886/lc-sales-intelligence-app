@@ -16,7 +16,7 @@ public class NotionTranscriptAccessor : INotionTranscriptAccessor
     public NotionTranscriptAccessor(IHttpClientFactory httpClientFactory, IOptions<NotionConfiguration> config)
     {
         _httpClient = httpClientFactory.CreateClient("Notion");
-        _databaseId = config.Value.TranscriptsDatabaseId;
+        _databaseId = config.Value.TranscriptsDatabaseId.Trim();
     }
 
     public async Task<IReadOnlyList<NotionTranscriptListItemAccessModel>> GetTranscriptsAsync(

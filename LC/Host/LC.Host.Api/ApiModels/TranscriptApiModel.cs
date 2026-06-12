@@ -1,21 +1,21 @@
 namespace LC.Host.Api.ApiModels;
 
 public record TranscriptApiModel(
-    string PageId,
-    string RecordingName,
+    string Id,
+    string Name,
     string? OpportunityId,
     string? Company,
     string? ContactName,
     string? ContactTitle,
     string? RepName,
     string? DealStage,
-    string? CallType,
+    string? DealType,
     string? Outcome,
     string? Audience,
     string? RecordingId,
     string? Speakers,
     string? DeviceSerial,
-    double? DurationMins,
+    double? Duration,
     DateTime? CreatedAt,
     bool Reviewed,
     string[] KeyTopics,
@@ -24,5 +24,5 @@ public record TranscriptApiModel(
     string? CallQuality,
     bool CoachableMoments,
     string? SyncedByName,
-    string TranscriptBody
+    string TranscriptText
 );

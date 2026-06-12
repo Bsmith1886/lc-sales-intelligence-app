@@ -1,8 +1,8 @@
 namespace LC.Host.Api.ApiModels;
 
 public record TranscriptListItemApiModel(
-    string PageId,
-    string RecordingName,
+    string Id,
+    string Name,
     string? Company,
     string? RepName,
     string? DealStage,

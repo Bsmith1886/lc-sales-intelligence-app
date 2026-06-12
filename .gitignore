@@ -9,6 +9,7 @@
 bin/
 obj/
 publish/
+LC/Host/LC.Host.Proxy/wwwroot/
 
 # NuGet
 *.nupkg
