@@ -399,6 +399,103 @@ When your changes create orphans:
 
 The test: Every changed line should trace directly to the user's request.
 
+---
+
+## 14. NetSuite OAuth 2.0 M2M Integration
+
+Every tool that integrates with NetSuite uses the OAuth 2.0 Client Credentials (Machine-to-Machine) flow. The requirements below are exact — deviating from any one of them produces an `invalid_grant` 400 error with no further explanation from NetSuite.
+
+### Certificate Requirements
+
+| Requirement | Value |
+|---|---|
+| Key type | RSA only |
+| Key size | **4096 bits** (3072 is also valid; 2048 is NOT — NetSuite rejects it silently at token time) |
+| Key format | PKCS8 PEM (`-----BEGIN PRIVATE KEY-----`) |
+| Cert format | X.509 PEM (`-----BEGIN CERTIFICATE-----`) |
+| Signing algorithm | RSA-PSS SHA-256 (`PS256`) |
+| Max validity | 2 years |
+
+**Do not use `New-SelfSignedCertificate` (PowerShell).** It generates 2048-bit keys by default. Always use OpenSSL.
+
+### Generating a New Certificate
+
+```bash
+openssl req -new -x509 -newkey rsa:4096 \
+  -keyout private.pem \
+  -sigopt rsa_padding_mode:pss \
+  -sha256 \
+  -sigopt rsa_pss_saltlen:64 \
+  -out public.pem \
+  -nodes \
+  -days 730 \
+  -subj "//CN=LED-Connection-{ToolName}"
+```
+
+This produces two files:
+- `public.pem` — upload to NetSuite
+- `private.pem` — store in User Secrets / Key Vault as `NetSuiteConfiguration:PrivateKeyPem`
+
+### Uploading to NetSuite
+
+1. **Setup → Integration → OAuth 2.0 Client Credentials Setup**
+2. Click **Create New**
+3. Fill in: Application (integration record), Entity (employee account used for M2M), Role (must have REST Web Services permission)
+4. Upload `public.pem`
+5. Save — NetSuite displays the **Certificate ID** (a base64url string). This is the `kid` used in the JWT header. Store it as `NetSuiteConfiguration:CertId`.
+
+### Required Configuration Values
+
+| Secret key | Description |
+|---|---|
+| `NetSuiteConfiguration:AccountId` | NetSuite account ID (e.g. `6355110-sb1`). Sandbox accounts use `-sb1` suffix. |
+| `NetSuiteConfiguration:ClientId` | From the integration record's **Client Credentials** section |
+| `NetSuiteConfiguration:CertId` | Certificate ID assigned by NetSuite after uploading the public cert |
+| `NetSuiteConfiguration:PrivateKeyPem` | Full PKCS8 PEM content of `private.pem` (including headers) |
+
+### Token Endpoint URL
+
+```
+https://{accountId-with-hyphens}.suitetalk.api.netsuite.com/services/rest/auth/oauth2/v1/token
+```
+
+**Critical:** Replace underscores with hyphens in the AccountId when building this URL. `6355110_SB1` → `6355110-sb1`. The `NetSuiteConfiguration.TokenEndpoint` property must do this: `AccountId.Replace('_', '-').Trim().ToLowerInvariant()`.
+
+### JWT Assertion Structure
+
+The `client_assertion` posted to the token endpoint must be a JWT signed with PS256 containing:
+
+| Field | Value |
+|---|---|
+| Header `alg` | `PS256` |
+| Header `kid` | CertId |
+| Claim `iss` | ClientId |
+| Claim `aud` | Full token endpoint URL |
+| Claim `scope` | `["rest_webservices"]` (array) |
+| Claim `jti` | New GUID per request |
+| Claim `exp` | Max 1 hour from `iat` |
+
+Use `Microsoft.IdentityModel.JsonWebTokens` (`JsonWebTokenHandler` + `SecurityTokenDescriptor`) with `SecurityAlgorithms.RsaSsaPssSha256`. Set `CryptoProviderFactory.CacheSignatureProviders = false` on the key to avoid key disposal errors.
+
+### Token Request
+
+```
+POST {TokenEndpoint}
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=client_credentials
+&client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer
+&client_assertion={signed-jwt}
+```
+
+No `client_id` or `client_secret` in the request body — the identity is entirely in the JWT.
+
+### NuGet Package
+
+```
+Microsoft.IdentityModel.JsonWebTokens 8.x
+```
+
 ### Goal-Driven Execution
 
 **Define success criteria. Loop until verified.**

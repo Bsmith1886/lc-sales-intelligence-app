@@ -10,5 +10,7 @@ public record TranscriptListItemModel(
     string? Audience,
     double? DurationMins,
     DateTime? CreatedAt,
-    bool Reviewed
+    bool Reviewed,
+    string? CallQuality,
+    bool CoachableMoments
 );

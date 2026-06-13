@@ -75,7 +75,9 @@ public class NotionTranscriptAccessor : INotionTranscriptAccessor
             Audience: GetSelect(p, "Audience"),
             DurationMins: GetNumber(p, "Duration (mins)"),
             CreatedAt: GetDate(p, "Created At") ?? page.CreatedTime,
-            Reviewed: GetCheckbox(p, "Reviewed")
+            Reviewed: GetCheckbox(p, "Reviewed"),
+            CallQuality: GetSelect(p, "Call Quality"),
+            CoachableMoments: GetCheckbox(p, "Coachable Moments")
         );
     }
 

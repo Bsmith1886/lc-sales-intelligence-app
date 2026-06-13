@@ -34,7 +34,8 @@ public class TranscriptController : ControllerBase
 
     private static TranscriptListItemApiModel MapToListItem(TranscriptListItemModel m) => new(
         m.PageId, m.RecordingName, m.Company, m.RepName, m.DealStage,
-        m.CallType, m.Audience, m.DurationMins, m.CreatedAt, m.Reviewed);
+        m.CallType, m.Audience, m.DurationMins, m.CreatedAt, m.Reviewed,
+        m.CallQuality, m.CoachableMoments);
 
     private static TranscriptApiModel MapToDetail(TranscriptModel m) => new(
         m.PageId, m.RecordingName, m.OpportunityId, m.Company, m.ContactName, m.ContactTitle,

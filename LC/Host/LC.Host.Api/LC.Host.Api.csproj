@@ -15,6 +15,7 @@
   <ItemGroup>
     <ProjectReference Include="..\LC.Host.Common\LC.Host.Common.csproj" />
     <ProjectReference Include="..\..\Access\LC.Access.Notion\LC.Access.Notion.csproj" />
+    <ProjectReference Include="..\..\Access\LC.Access.NetSuite\LC.Access.NetSuite.csproj" />
     <ProjectReference Include="..\..\Manager\LC.Manager.Transcript\LC.Manager.Transcript.csproj" />
   </ItemGroup>
 

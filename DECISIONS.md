@@ -92,6 +92,8 @@ Update this file whenever a meaningful decision is made or a setup step is compl
 NetSuiteConfiguration:ClientId
 NetSuiteConfiguration:ClientSecret
 NetSuiteConfiguration:AccountId   (format: 1234567-SB1 for sandbox)
+NetSuiteConfiguration:CertificateThumbprint   (local Windows certificate store thumbprint)
+NetSuiteConfiguration:CertificateId           (NetSuite-generated M2M certificate mapping ID)
 ```
 
 **Token Endpoint Pattern:**

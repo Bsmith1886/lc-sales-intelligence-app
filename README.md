@@ -84,6 +84,8 @@ cd LC/Host/LC.Host.Api
 dotnet user-secrets set "NetSuiteConfiguration:ClientId" "<value>"
 dotnet user-secrets set "NetSuiteConfiguration:ClientSecret" "<value>"
 dotnet user-secrets set "NetSuiteConfiguration:AccountId" "<value>"
+dotnet user-secrets set "NetSuiteConfiguration:CertificateThumbprint" "<local-certificate-thumbprint>"
+dotnet user-secrets set "NetSuiteConfiguration:CertificateId" "<netsuite-m2m-certificate-id>"
 dotnet user-secrets set "NotionConfiguration:ApiToken" "<value>"
 dotnet user-secrets set "NotionConfiguration:TranscriptsDatabaseId" "<value>"
 dotnet user-secrets set "AzureAd:TenantId" "<value>"
